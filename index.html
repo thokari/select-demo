@@ -22,14 +22,15 @@
         </div>
         <script>
           angular.module('select', [])
-          .controller('UserCtrl', function ($scope, User, Company, $filter) {
+          .controller('UserCtrl', function ($scope, User, $filter) {
             $scope.loggedInUser = User.getLoggedInUser()
-            $scope.newUser = { role: 'place', selectedCompany: null, selectedPlace: null }
             $scope.selectableRoles = $filter('selectableRoles')($scope.loggedInUser.role)
             $scope.selectableCompanies = $filter('selectableCompanies')($scope.loggedInUser.companyId)
+            $scope.newUser = { role: $scope.selectableRoles[0], selectedCompany: $scope.selectableCompanies[0], selectedPlace: null }
             $scope.$watch('newUser.selectedCompany', function (newVal) {
               if (newVal) {
                 $scope.selectablePlaces = $filter('selectablePlaces')($scope.loggedInUser.placeId, $scope.newUser.selectedCompany.places)
+                $scope.newUser.selectedPlace = $scope.selectablePlaces[0]
               }
             })
             $scope.saveUser = function () {
@@ -75,9 +76,9 @@
                 return {
                   name: 'MyUsername',
                   id: 'user1',
-                  role: 'company',
-                  companyId: 'company1',
-                  placeId: 'place1'
+                  role: 'admin',
+                  //companyId: 'company1',
+                  //placeId: 'place1'
                 }
               }
             }
