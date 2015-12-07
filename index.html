@@ -23,11 +23,15 @@
         <script>
           angular.module('select', [])
           .controller('UserCtrl', function ($scope, User, Company, $filter) {
-            $scope.allRoles = ['admin', 'company', 'place']
             $scope.loggedInUser = User.getLoggedInUser()
             $scope.newUser = { role: 'place', selectedCompany: null, selectedPlace: null }
             $scope.selectableRoles = $filter('selectableRoles')($scope.loggedInUser.role)
             $scope.selectableCompanies = $filter('selectableCompanies')($scope.loggedInUser.companyId)
+            $scope.$watch('newUser.selectedCompany', function (newVal) {
+              if (newVal) {
+                $scope.selectablePlaces = $filter('selectablePlaces')($scope.loggedInUser.placeId, $scope.newUser.selectedCompany.places)
+              }
+            })
             $scope.saveUser = function () {
               console.log({
                 role:$scope.newUser.role,
@@ -35,11 +39,6 @@
                 placeId: $scope.newUser.selectedPlace.id
               })
             }
-            $scope.$watch('newUser.selectedCompany', function (newVal) {
-              if (newVal) {
-                $scope.selectablePlaces = $filter('selectablePlaces')($scope.loggedInUser.placeId, $scope.newUser.selectedCompany.places)
-              }
-            })
           })
           .filter('selectableRoles', function () {
               return function (userRole) {
