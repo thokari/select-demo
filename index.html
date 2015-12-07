@@ -9,127 +9,134 @@
         <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
     </head>
     <body ng-app='select'>
-       <div ng-controller='UserCtrl'>
-          <label for="role">Role</label>
-          <select name="role" ng-model='newUser.role' ng-options='role as role for role in selectableRoles'></select>
-          <br />
-          <label for="company">Company</label>
-          <select name="company" ng-model='newUser.selectedCompany' ng-options='company.id for company in selectableCompanies track by company.id'></select>
-          <br />
-          <label for="place">Place</label>
-          <select name="place" ng-model='newUser.selectedPlace' ng-options='place.name for place in selectablePlaces track by place.id'></select>
-          <button value="Save" ng-click="saveUser()">Save</button>
+      <div ng-controller='UserCtrl'>
+        <label for="email">Email</label>
+        <input name="email" type="email" ng-model="newUser.email" />
+        <label for="role">Role</label>
+        <select name="role" ng-model='newUser.role' ng-options='role as role for role in selectableRoles'></select>
+        <br />
+        <label for="company">Company</label>
+        <select name="company" ng-model='newUser.selectedCompany' ng-options='company.id for company in selectableCompanies track by company.id'></select>
+        <br />
+        <label for="place">Place</label>
+        <select name="place" ng-model='newUser.selectedPlace' ng-options='place.name for place in selectablePlaces track by place.id'></select>
+        <button value="Save" ng-click="saveUser()">Save</button>
+        <br />
+        <div ng-show="savedUser">
+          Created user {{ savedUser.email }} with role {{ savedUser.role }}, {{ savedUser.companyId }}, {{ savedUser.placeId }}
         </div>
-        <script>
-          angular.module('select', [])
-          .controller('UserCtrl', function ($scope, User, $filter) {
-            $scope.loggedInUser = User.getLoggedInUser()
-            $scope.selectableRoles = $filter('selectableRoles')($scope.loggedInUser.role)
-            $scope.selectableCompanies = $filter('selectableCompanies')($scope.loggedInUser.companyId)
-            $scope.newUser = { role: $scope.selectableRoles[0], selectedCompany: $scope.selectableCompanies[0], selectedPlace: null }
-            $scope.$watch('newUser.selectedCompany', function (newVal) {
-              if (newVal) {
-                $scope.selectablePlaces = $filter('selectablePlaces')($scope.loggedInUser.placeId, $scope.newUser.selectedCompany.places)
-                $scope.newUser.selectedPlace = $scope.selectablePlaces[0]
-              }
-            })
-            $scope.saveUser = function () {
-              console.log({
-                role:$scope.newUser.role,
-                companyId: $scope.newUser.selectedCompany.id,
-                placeId: $scope.newUser.selectedPlace.id
-              })
+      </div>
+      <script>
+angular.module('select', [])
+.controller('UserCtrl', function ($scope, User, $filter) {
+  $scope.loggedInUser = User.getLoggedInUser()
+  $scope.selectableRoles = $filter('selectableRoles')($scope.loggedInUser.role)
+  $scope.selectableCompanies = $filter('selectableCompanies')($scope.loggedInUser.companyId)
+  $scope.newUser = { email: 'some@email.de', role: $scope.selectableRoles[0], selectedCompany: $scope.selectableCompanies[0], selectedPlace: null }
+  $scope.$watch('newUser.selectedCompany', function (newVal) {
+    if (newVal) {
+      $scope.selectablePlaces = $filter('selectablePlaces')($scope.loggedInUser.placeId, $scope.newUser.selectedCompany.places)
+      $scope.newUser.selectedPlace = $scope.selectablePlaces[0]
+    }
+  })
+  $scope.saveUser = function () {
+    $scope.savedUser = {
+      email: $scope.newUser.email,
+      role: $scope.newUser.role,
+      companyId: $scope.newUser.selectedCompany.id,
+      placeId: $scope.newUser.selectedPlace.id
+    }
+  }
+})
+.filter('selectableRoles', function () {
+    return function (userRole) {
+      var allRoles = ['admin', 'company', 'place']
+      return allRoles.slice(allRoles.indexOf(userRole), 3)
+    }
+})
+.filter('selectableCompanies', function (Company) {
+  return function (userCompanyId) {
+    var companies = Company.getAll()
+    if (userCompanyId) {
+      return companies.filter(function (company) {
+        return company.id === userCompanyId
+      })
+    } else {
+      return companies
+    }
+  }
+})
+.filter('selectablePlaces', function () {
+  return function (loggedInUserPlaceId, newUserCompanyPlaces) {
+    if (loggedInUserPlaceId) {
+      return newUserCompanyPlaces.filter(function (place) {
+        return loggedInUserPlaceId === place.id
+      })
+    } else {
+      return newUserCompanyPlaces
+    }
+  }
+})
+.service('User', function () {
+  return {
+    getLoggedInUser: function () {
+      return {
+        name: 'MyUsername',
+        id: 'user1',
+        role: 'admin',
+        //companyId: 'company1',
+        //placeId: 'place1'
+      }
+    }
+  }
+})
+.service('Company', function () {
+  return {
+    getAll: function () {
+      return [
+        {
+          id: 'company1',
+          places: [
+            {
+              id: 'place1',
+              name: 'c1place1'
+            },
+            {
+              id: 'place2',
+              name: 'c1place2'
             }
-          })
-          .filter('selectableRoles', function () {
-              return function (userRole) {
-                var allRoles = ['admin', 'company', 'place']
-                return allRoles.slice(allRoles.indexOf(userRole), 3)
-              }
-          })
-          .filter('selectableCompanies', function (Company) {
-            return function (userCompanyId) {
-              var companies = Company.getAll()
-              if (userCompanyId) {
-                return companies.filter(function (company) {
-                  return company.id === userCompanyId
-                })
-              } else {
-                return companies
-              }
+          ]
+        },
+        {
+          id: 'company2',
+          places: [
+            {
+              id: 'place3',
+              name: 'c2place1'
+            },
+            {
+              id: 'place4',
+              name: 'c2place2'
             }
-          })
-          .filter('selectablePlaces', function () {
-            return function (loggedInUserPlaceId, newUserCompanyPlaces) {
-              if (loggedInUserPlaceId) {
-                return newUserCompanyPlaces.filter(function (place) {
-                  return loggedInUserPlaceId === place.id
-                })
-              } else {
-                return newUserCompanyPlaces
-              }
+          ]
+        },
+        {
+          id: 'company3',
+          places: [
+            {
+              id: 'place5',
+              name: 'c3place1'
+            },
+            {
+              id: 'place6',
+              name: 'c3place2'
             }
-          })
-          .service('User', function () {
-            return {
-              getLoggedInUser: function () {
-                return {
-                  name: 'MyUsername',
-                  id: 'user1',
-                  role: 'admin',
-                  //companyId: 'company1',
-                  //placeId: 'place1'
-                }
-              }
-            }
-          })
-          .service('Company', function () {
-            return {
-              getAll: function () {
-                return [
-                  {
-                    id: 'company1',
-                    places: [
-                      {
-                        id: 'place1',
-                        name: 'c1place1'
-                      },
-                      {
-                        id: 'place2',
-                        name: 'c1place2'
-                      }
-                    ]
-                  },
-                  {
-                    id: 'company2',
-                    places: [
-                      {
-                        id: 'place3',
-                        name: 'c2place1'
-                      },
-                      {
-                        id: 'place4',
-                        name: 'c2place2'
-                      }
-                    ]
-                  },
-                  {
-                    id: 'company3',
-                    places: [
-                      {
-                        id: 'place5',
-                        name: 'c3place1'
-                      },
-                      {
-                        id: 'place6',
-                        name: 'c3place2'
-                      }
-                    ]
-                  }
-                ]
-              }
-            }
-          })
-        </script>
-    </body>
+          ]
+        }
+      ]
+    }
+  }
+})
+    </script>
+  </body>
 </html>
